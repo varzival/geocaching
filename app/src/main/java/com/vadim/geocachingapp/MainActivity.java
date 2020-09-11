@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.BoundingBox;
@@ -31,6 +30,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity{
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private MapView map = null;
+    private GpsMyLocationProvider locationProvider = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -62,7 +62,8 @@ public class MainActivity extends AppCompatActivity{
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         });
 
-        MyLocationNewOverlay mLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(ctx), map);
+        locationProvider = new GpsMyLocationProvider(ctx);
+        MyLocationNewOverlay mLocationOverlay = new MyLocationNewOverlay(locationProvider, map);
         mLocationOverlay.enableMyLocation();
         map.getOverlays().add(mLocationOverlay);
 
@@ -70,21 +71,20 @@ public class MainActivity extends AppCompatActivity{
         Random rnd = new Random();
         // create 10k labelled points
         // in most cases, there will be no problems of displaying >100k points, feel free to try
-        List<IGeoPoint> points = new ArrayList<>();
+        List<LabelledGeoPoint> points = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             points.add(new LabelledGeoPoint(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5
                     , "Point #" + i));
         }
 
-        for (IGeoPoint point : points)
+        for (LabelledGeoPoint point : points)
         {
             Marker marker = new Marker(map);
             marker.setPosition((GeoPoint) point);
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
 
-            // requires API level >= 26
-            //Color col = Color.valueOf(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
-            //marker.setTextLabelBackgroundColor(col.toArgb());
+            marker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_point_of_interest));
+            marker.setTitle(point.getLabel());
 
             // onClick callback
             marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
@@ -113,6 +113,13 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         });
+
+        new Thread(new Runnable() {
+            public void run() {
+
+            }
+        }).start();
+
 
     }
 
