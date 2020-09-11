@@ -32,8 +32,8 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String EXTRA_MESSAGE
-            = "com.example.android.twoactivities.extra.MESSAGE";
+    public static final String EXTRA_QUIZ
+            = "com.example.android.twoactivities.extra.QUIZ";
     // Unique tag for the intent reply
     public static final int TEXT_REQUEST = 1;
 
@@ -86,8 +86,14 @@ public class MainActivity extends AppCompatActivity {
             public boolean onMarkerClick(Marker marker, MapView mapView) {
 
                 Intent intent = new Intent(getApplicationContext(), QuizActivity.class);
-                // TODO set quiz number
-                intent.putExtra(EXTRA_MESSAGE, "QUIZ");
+
+                String[] options = {"Korrekt", "Falsch", "Falsch"};
+
+                QuizInfo quiz = new QuizInfo(
+                        "Quiz Text", options, 0
+                );
+
+                intent.putExtra(EXTRA_QUIZ, quiz);
                 startActivityForResult(intent, TEXT_REQUEST);
 
                 return true;
@@ -125,7 +131,10 @@ public class MainActivity extends AppCompatActivity {
             // Test to make sure the intent reply result was good.
             if (resultCode == RESULT_OK) {
                 boolean reply = data.getBooleanExtra(QuizActivity.EXTRA_REPLY, false);
-                // TODO process quiz
+                String replyText = reply ? "Richtig" : "Falsch";
+                Toast.makeText(map.getContext()
+                        , replyText
+                        , Toast.LENGTH_SHORT).show();
             }
         }
     }
