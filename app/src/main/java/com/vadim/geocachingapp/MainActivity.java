@@ -7,12 +7,16 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Pair;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -22,8 +26,14 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
-import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -71,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class CustomMarker extends Marker {
+
+        public QuizInfo quiz;
+
         private final Marker.OnMarkerClickListener POIListener = new Marker.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker, MapView mapView) {
@@ -87,12 +100,6 @@ public class MainActivity extends AppCompatActivity {
 
                 Intent intent = new Intent(getApplicationContext(), QuizActivity.class);
 
-                String[] options = {"Korrekt", "Falsch", "Falsch"};
-
-                QuizInfo quiz = new QuizInfo(
-                        "Quiz Text", options, 0
-                );
-
                 intent.putExtra(EXTRA_QUIZ, quiz);
                 startActivityForResult(intent, TEXT_REQUEST);
 
@@ -101,8 +108,10 @@ public class MainActivity extends AppCompatActivity {
         };
 
 
-        public CustomMarker(MapView mapView, GeoPoint position) {
+        public CustomMarker(MapView mapView, GeoPoint position, QuizInfo quiz) {
             super(mapView);
+
+            this.quiz = quiz;
 
             this.setPosition(position);
             this.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
@@ -169,20 +178,58 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         });
 
+        // TODO remove for production
+        GeoGame game = new GeoGame();
+
+        String[] options = {"Korrekt", "Falsch", "Falsch"};
+
+        QuizInfo quiz = new QuizInfo(
+                "Quiz Text", options, 0
+        );
+
         Random rnd = new Random();
-        // create 10k labelled points
-        // in most cases, there will be no problems of displaying >100k points, feel free to try
-        List<LabelledGeoPoint> points = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            points.add(new LabelledGeoPoint(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5
-                    , "Point #" + i));
+            game.addQuiz(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5, quiz);
         }
         // my loc 40.3808, -3.6777
-        points.add(new LabelledGeoPoint(40.3808, -3.6777, "Point #" + "10"));
+        game.addQuiz(40.3808, -3.6777, quiz);
 
-        List<CustomMarker> markers = new LinkedList<>();
-        for (LabelledGeoPoint point : points) {
-            CustomMarker marker = new CustomMarker(map, point);
+        GeoGames games = new GeoGames();
+        games.addGame("test", game);
+        String jsonStr = new Gson().toJson(games);
+        File file = new File(ctx.getFilesDir(), getString(R.string.games_filename));
+        try {
+            FileWriter fileWriter = new FileWriter(file);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(jsonStr);
+            bufferedWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //TODO end
+
+        StringBuilder sb = new StringBuilder();
+        try {
+            FileInputStream fis = ctx.openFileInput(getString(R.string.games_filename));
+            InputStreamReader isr = new InputStreamReader(fis);
+            BufferedReader bufferedReader = new BufferedReader(isr);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                sb.append(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(GeoGames.class, new GamesDeserializer())
+                        .create();
+        games = gson.fromJson(sb.toString(), GeoGames.class);
+        game = games.getGame("test");
+
+        List < CustomMarker > markers = new LinkedList<>();
+        for (Pair<Double, Double> latLonPair : game.pointQuizDict.keySet()) {
+            GeoPoint point = new GeoPoint(latLonPair.first, latLonPair.second);
+            CustomMarker marker = new CustomMarker(map, point, quiz);
             map.getOverlays().add(marker);
             markers.add(marker);
         }
@@ -192,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
         mLocationOverlay.enableMyLocation();
         map.getOverlays().add(mLocationOverlay);
 
+        List<GeoPoint> points = new LinkedList<>(game.getPoints());
         // zoom to its bounding box
         final BoundingBox zoomToBox = BoundingBox.fromGeoPoints(points).increaseByScale(1.5f);
         map.addOnFirstLayoutListener(new MapView.OnFirstLayoutListener() {

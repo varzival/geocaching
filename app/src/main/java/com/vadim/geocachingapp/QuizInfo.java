@@ -22,9 +22,4 @@ public class QuizInfo implements Serializable {
     {
         return new Gson().toJson(this);
     }
-
-    public static QuizInfo fromJSONString(String json)
-    {
-        return new Gson().fromJson(json, QuizInfo.class);
-    }
 }
