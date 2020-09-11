@@ -3,7 +3,6 @@ package com.vadim.geocachingapp;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -16,13 +15,13 @@ import androidx.core.content.ContextCompat;
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBox;
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint;
-import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlay;
-import org.osmdroid.views.overlay.simplefastpoint.SimpleFastPointOverlayOptions;
-import org.osmdroid.views.overlay.simplefastpoint.SimplePointTheme;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +41,7 @@ public class MainActivity extends AppCompatActivity{
         //load/initialize the osmdroid configuration, this can be done
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+
         //setting this before the layout is inflated is a good idea
         //it 'should' ensure that the map has a writable location for the map cache, even without permissions
         //if no tiles are displayed, you can try overriding the cache path using Configuration.getInstance().setCachePath
@@ -76,49 +76,44 @@ public class MainActivity extends AppCompatActivity{
                     , "Point #" + i));
         }
 
-        // wrap them in a theme
-        SimplePointTheme pt = new SimplePointTheme(points, true);
+        for (IGeoPoint point : points)
+        {
+            Marker marker = new Marker(map);
+            marker.setPosition((GeoPoint) point);
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
 
-        // create label style
-        Paint textStyle = new Paint();
-        textStyle.setStyle(Paint.Style.FILL);
-        textStyle.setARGB(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
-        textStyle.setTextAlign(Paint.Align.CENTER);
-        textStyle.setTextSize(24);
+            // requires API level >= 26
+            //Color col = Color.valueOf(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+            //marker.setTextLabelBackgroundColor(col.toArgb());
 
-        // set some visual options for the overlay
-        // we use here MAXIMUM_OPTIMIZATION algorithm, which works well with >100k points
-        SimpleFastPointOverlayOptions opt = SimpleFastPointOverlayOptions.getDefaultStyle()
-        //        .setAlgorithm(SimpleFastPointOverlayOptions.RenderingAlgorithm.MAXIMUM_OPTIMIZATION)
-                .setRadius(7).setIsClickable(true).setCellSize(30).setTextStyle(textStyle);
+            // onClick callback
+            marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
 
-        // create the overlay with the theme
-        final SimpleFastPointOverlay sfpo = new SimpleFastPointOverlay(pt, opt);
+                @Override
+                public boolean onMarkerClick(Marker marker, MapView mapView) {
+                    Toast.makeText(map.getContext()
+                            , "You clicked " + ((LabelledGeoPoint) marker.getPosition()).getLabel()
+                            , Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
 
-        // onClick callback
-        sfpo.setOnClickListener(new SimpleFastPointOverlay.OnClickListener() {
-            @Override
-            public void onClick(SimpleFastPointOverlay.PointAdapter points, Integer point) {
-                Toast.makeText(map.getContext()
-                        , "You clicked " + ((LabelledGeoPoint) points.get(point)).getLabel()
-                        , Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // add overlay
-        map.getOverlays().add(sfpo);
+            map.getOverlays().add(marker);
+        }
 
         // zoom to its bounding box
+        final BoundingBox zoomToBox = BoundingBox.fromGeoPoints(points).increaseByScale(1.5f);
         map.addOnFirstLayoutListener(new MapView.OnFirstLayoutListener() {
 
             @Override
             public void onFirstLayout(View v, int left, int top, int right, int bottom) {
                 if(map != null && map.getController() != null) {
                     map.getController().zoomTo(6);
-                    map.zoomToBoundingBox(sfpo.getBoundingBox(), true);
+                    map.zoomToBoundingBox(zoomToBox, true);
                 }
             }
         });
+
     }
 
     @Override
