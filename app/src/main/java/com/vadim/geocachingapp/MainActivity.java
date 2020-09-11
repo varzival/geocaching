@@ -29,26 +29,22 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity {
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private MapView map;
-    private GpsMyLocationProvider locationProvider;
 
     private final double clickableDistance = 10;
 
-    private class GPSLocationChangeProvider extends GpsMyLocationProvider
-    {
-        private List<Marker> markers;
+    private class GPSLocationChangeProvider extends GpsMyLocationProvider {
+        private List<CustomMarker> markers;
 
-        public GPSLocationChangeProvider(Context ctx, List<Marker> markers)
-        {
+        public GPSLocationChangeProvider(Context ctx, List<CustomMarker> markers) {
             super(ctx);
             this.markers = markers;
         }
 
         @Override
-        public void onLocationChanged(Location location)
-        {
+        public void onLocationChanged(Location location) {
             super.onLocationChanged(location);
 
             // update icons
@@ -56,19 +52,58 @@ public class MainActivity extends AppCompatActivity{
             double lon = location.getLongitude();
             GeoPoint my_point = new GeoPoint(lat, lon);
 
-            for (Marker marker: markers)
-            {
+            for (CustomMarker marker : markers) {
                 double distance = marker.getPosition().distanceToAsDouble(my_point);
-                if (distance <= clickableDistance)
-                {
-                    marker.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_clickable));
-                }
-                else
-                {
-                    marker.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_of_interest));
+                if (distance <= clickableDistance) {
+                    marker.setClickable();
+                } else {
+                    marker.setPOI();
                 }
             }
         }
+    }
+
+    private class CustomMarker extends Marker {
+        private final Marker.OnMarkerClickListener POIListener = new Marker.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker, MapView mapView) {
+                Toast.makeText(map.getContext()
+                        , "Komm näher!"
+                        , Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        };
+
+        private final Marker.OnMarkerClickListener clickableListener = new Marker.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker, MapView mapView) {
+                Toast.makeText(map.getContext()
+                        , "Start Quiz!"
+                        , Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        };
+
+
+        public CustomMarker(MapView mapView, GeoPoint position) {
+            super(mapView);
+
+            this.setPosition(position);
+            this.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_of_interest));
+            this.setOnMarkerClickListener(POIListener);
+        }
+
+        public void setClickable() {
+            this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_clickable));
+            this.setOnMarkerClickListener(clickableListener);
+        }
+
+        public void setPOI() {
+            this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_of_interest));
+            this.setOnMarkerClickListener(POIListener);
+        }
+
     }
 
     @Override
@@ -94,7 +129,7 @@ public class MainActivity extends AppCompatActivity{
         map = (MapView) findViewById(R.id.map);
         map.setTileSource(TileSourceFactory.MAPNIK);
 
-        requestPermissionsIfNecessary(new String[] {
+        requestPermissionsIfNecessary(new String[]{
                 // if you need to show the current location, uncomment the line below
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 // WRITE_EXTERNAL_STORAGE is required in order to show the map
@@ -112,33 +147,14 @@ public class MainActivity extends AppCompatActivity{
         // my loc 40.3808, -3.6777
         points.add(new LabelledGeoPoint(40.3808, -3.6777, "Point #" + "10"));
 
-        List<Marker> markers = new LinkedList<>();
-        for (LabelledGeoPoint point : points)
-        {
-            Marker marker = new Marker(map);
-            marker.setPosition((GeoPoint) point);
-            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-
-            marker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_point_of_interest));
-            marker.setTitle(point.getLabel());
-
-            // onClick callback
-            marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
-
-                @Override
-                public boolean onMarkerClick(Marker marker, MapView mapView) {
-                    Toast.makeText(map.getContext()
-                            , "You clicked " + ((LabelledGeoPoint) marker.getPosition()).getLabel()
-                            , Toast.LENGTH_SHORT).show();
-                    return true;
-                }
-            });
-
+        List<CustomMarker> markers = new LinkedList<>();
+        for (LabelledGeoPoint point : points) {
+            CustomMarker marker = new CustomMarker(map, point);
             map.getOverlays().add(marker);
             markers.add(marker);
         }
 
-        locationProvider = new GPSLocationChangeProvider(ctx, markers);
+        GpsMyLocationProvider locationProvider = new GPSLocationChangeProvider(ctx, markers);
         MyLocationNewOverlay mLocationOverlay = new MyLocationNewOverlay(locationProvider, map);
         mLocationOverlay.enableMyLocation();
         map.getOverlays().add(mLocationOverlay);
@@ -149,7 +165,7 @@ public class MainActivity extends AppCompatActivity{
 
             @Override
             public void onFirstLayout(View v, int left, int top, int right, int bottom) {
-                if(map != null && map.getController() != null) {
+                if (map != null && map.getController() != null) {
                     map.getController().zoomTo(6);
                     map.zoomToBoundingBox(zoomToBox, true);
                 }
@@ -188,8 +204,7 @@ public class MainActivity extends AppCompatActivity{
                     this,
                     permissionsToRequest.toArray(new String[0]),
                     REQUEST_PERMISSIONS_REQUEST_CODE);
-        }
-        else {
+        } else {
             // TODO display failure
         }
     }
