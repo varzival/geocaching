@@ -3,6 +3,7 @@ package com.vadim.geocachingapp;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
@@ -24,13 +25,51 @@ import org.osmdroid.views.overlay.simplefastpoint.LabelledGeoPoint;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity{
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
-    private MapView map = null;
-    private GpsMyLocationProvider locationProvider = null;
+    private MapView map;
+    private GpsMyLocationProvider locationProvider;
+
+    private final double clickableDistance = 10;
+
+    private class GPSLocationChangeProvider extends GpsMyLocationProvider
+    {
+        private List<Marker> markers;
+
+        public GPSLocationChangeProvider(Context ctx, List<Marker> markers)
+        {
+            super(ctx);
+            this.markers = markers;
+        }
+
+        @Override
+        public void onLocationChanged(Location location)
+        {
+            super.onLocationChanged(location);
+
+            // update icons
+            double lat = location.getLatitude();
+            double lon = location.getLongitude();
+            GeoPoint my_point = new GeoPoint(lat, lon);
+
+            for (Marker marker: markers)
+            {
+                double distance = marker.getPosition().distanceToAsDouble(my_point);
+                if (distance <= clickableDistance)
+                {
+                    marker.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_clickable));
+                }
+                else
+                {
+                    marker.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_of_interest));
+                }
+            }
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -62,12 +101,6 @@ public class MainActivity extends AppCompatActivity{
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         });
 
-        locationProvider = new GpsMyLocationProvider(ctx);
-        MyLocationNewOverlay mLocationOverlay = new MyLocationNewOverlay(locationProvider, map);
-        mLocationOverlay.enableMyLocation();
-        map.getOverlays().add(mLocationOverlay);
-
-
         Random rnd = new Random();
         // create 10k labelled points
         // in most cases, there will be no problems of displaying >100k points, feel free to try
@@ -76,7 +109,10 @@ public class MainActivity extends AppCompatActivity{
             points.add(new LabelledGeoPoint(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5
                     , "Point #" + i));
         }
+        // my loc 40.3808, -3.6777
+        points.add(new LabelledGeoPoint(40.3808, -3.6777, "Point #" + "10"));
 
+        List<Marker> markers = new LinkedList<>();
         for (LabelledGeoPoint point : points)
         {
             Marker marker = new Marker(map);
@@ -99,7 +135,13 @@ public class MainActivity extends AppCompatActivity{
             });
 
             map.getOverlays().add(marker);
+            markers.add(marker);
         }
+
+        locationProvider = new GPSLocationChangeProvider(ctx, markers);
+        MyLocationNewOverlay mLocationOverlay = new MyLocationNewOverlay(locationProvider, map);
+        mLocationOverlay.enableMyLocation();
+        map.getOverlays().add(mLocationOverlay);
 
         // zoom to its bounding box
         final BoundingBox zoomToBox = BoundingBox.fromGeoPoints(points).increaseByScale(1.5f);
@@ -113,13 +155,6 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         });
-
-        new Thread(new Runnable() {
-            public void run() {
-
-            }
-        }).start();
-
 
     }
 
