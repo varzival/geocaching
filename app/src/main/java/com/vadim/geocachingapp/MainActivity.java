@@ -2,6 +2,7 @@ package com.vadim.geocachingapp;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -30,6 +31,12 @@ import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final String EXTRA_MESSAGE
+            = "com.example.android.twoactivities.extra.MESSAGE";
+    // Unique tag for the intent reply
+    public static final int TEXT_REQUEST = 1;
+
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private MapView map;
 
@@ -77,9 +84,12 @@ public class MainActivity extends AppCompatActivity {
         private final Marker.OnMarkerClickListener clickableListener = new Marker.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker, MapView mapView) {
-                Toast.makeText(map.getContext()
-                        , "Start Quiz!"
-                        , Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(getApplicationContext(), QuizActivity.class);
+                // TODO set quiz number
+                intent.putExtra(EXTRA_MESSAGE, "QUIZ");
+                startActivityForResult(intent, TEXT_REQUEST);
+
                 return true;
             }
         };
