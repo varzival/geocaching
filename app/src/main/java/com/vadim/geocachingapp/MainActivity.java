@@ -117,6 +117,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Test for the right intent reply.
+        if (requestCode == TEXT_REQUEST) {
+            // Test to make sure the intent reply result was good.
+            if (resultCode == RESULT_OK) {
+                boolean reply = data.getBooleanExtra(QuizActivity.EXTRA_REPLY, false);
+                // TODO process quiz
+            }
+        }
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
