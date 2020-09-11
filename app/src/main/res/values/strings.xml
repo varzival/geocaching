@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GeocachingApp</string>
+    <string name="gps_not_found_title">GPS nicht aktiviert</string>
+    <string name="gps_not_found_message">Bitte aktivieren</string>
+    <string name="yes">Ja</string>
+    <string name="no">Nein</string>
+</resources>
