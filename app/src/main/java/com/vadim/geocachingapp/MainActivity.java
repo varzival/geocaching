@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -50,7 +49,10 @@ public class MainActivity extends AppCompatActivity {
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private MapView map;
 
-    private final double clickableDistance = 10;
+    private final double clickableDistance = 20;
+
+    //TODO remove for production
+    private boolean gameCreated = false;
 
     private class GPSLocationChangeProvider extends GpsMyLocationProvider {
         private List<CustomMarker> markers;
@@ -178,35 +180,44 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         });
 
-        // TODO remove for production
-        GeoGame game = new GeoGame();
+        if (!gameCreated)
+        {
+            // TODO remove for production
+            GeoGame game = new GeoGame();
 
-        String[] options = {"Korrekt", "Falsch", "Falsch"};
+            String[] options = {"Korrekt", "Falsch", "Falsch"};
 
-        QuizInfo quiz = new QuizInfo(
-                "Quiz Text", options, 0
-        );
+            QuizInfo quiz = new QuizInfo(
+                    "Quiz Text", options, 0
+            );
 
-        Random rnd = new Random();
-        for (int i = 0; i < 10; i++) {
-            game.addQuiz(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5, quiz);
+            /*
+            Random rnd = new Random();
+            for (int i = 0; i < 10; i++) {
+                game.addQuiz(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5, quiz);
+            }
+            */
+            // my loc 49.374907, 8.682536
+            game.addQuiz(49.374907, 8.682536, quiz);
+            game.addQuiz(49.371920, 8.682804, quiz);
+            game.addQuiz(49.369059, 8.683040, quiz);
+
+            GeoGames games = new GeoGames();
+            games.addGame("test", game);
+            String jsonStr = new Gson().toJson(games);
+            File file = new File(ctx.getFilesDir(), getString(R.string.games_filename));
+            try {
+                FileWriter fileWriter = new FileWriter(file);
+                BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+                bufferedWriter.write(jsonStr);
+                bufferedWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            gameCreated = true;
+            //TODO end
         }
-        // my loc 40.3808, -3.6777
-        game.addQuiz(40.3808, -3.6777, quiz);
 
-        GeoGames games = new GeoGames();
-        games.addGame("test", game);
-        String jsonStr = new Gson().toJson(games);
-        File file = new File(ctx.getFilesDir(), getString(R.string.games_filename));
-        try {
-            FileWriter fileWriter = new FileWriter(file);
-            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            bufferedWriter.write(jsonStr);
-            bufferedWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //TODO end
 
         StringBuilder sb = new StringBuilder();
         try {
@@ -223,13 +234,13 @@ public class MainActivity extends AppCompatActivity {
         Gson gson = new GsonBuilder()
                         .registerTypeAdapter(GeoGames.class, new GamesDeserializer())
                         .create();
-        games = gson.fromJson(sb.toString(), GeoGames.class);
-        game = games.getGame("test");
+        GeoGames games = gson.fromJson(sb.toString(), GeoGames.class);
+        GeoGame game = games.getGame("test");
 
         List < CustomMarker > markers = new LinkedList<>();
         for (Pair<Double, Double> latLonPair : game.pointQuizDict.keySet()) {
             GeoPoint point = new GeoPoint(latLonPair.first, latLonPair.second);
-            CustomMarker marker = new CustomMarker(map, point, quiz);
+            CustomMarker marker = new CustomMarker(map, point, game.getQuiz(latLonPair.first, latLonPair.second));
             map.getOverlays().add(marker);
             markers.add(marker);
         }
@@ -247,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFirstLayout(View v, int left, int top, int right, int bottom) {
                 if (map != null && map.getController() != null) {
-                    map.getController().zoomTo(6);
+                    map.getController().zoomTo(19);
                     map.zoomToBoundingBox(zoomToBox, true);
                 }
             }
