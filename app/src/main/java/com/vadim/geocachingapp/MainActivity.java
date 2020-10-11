@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -35,9 +36,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -81,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 double distance = marker.getPosition().distanceToAsDouble(my_point);
                 if (marker.visited)
                 {
+                    marker.setVisited();
                     continue;
                 }
                 if (marker.getTimeLockLeft() > 0.0)
@@ -298,13 +302,17 @@ public class MainActivity extends AppCompatActivity {
             }
             */
             // my loc 49.374907, 8.682536
-            game.addQuiz(49.374907, 8.682536, quiz);
-            game.addQuiz(49.371920, 8.682804, quiz);
-            game.addQuiz(49.369059, 8.683040, quiz);
+            game.addQuiz(49.374907, 8.682536, quiz, false);
+            game.addQuiz(49.371920, 8.682804, quiz, false);
+            game.addQuiz(49.369059, 8.683040, quiz, false);
 
-            GeoGames games = new GeoGames();
-            games.addGame("test", game);
-            String jsonStr = new Gson().toJson(games);
+            HashMap<String, GeoGame> games = new HashMap<>();
+            games.put("test", game);
+            Gson gson = new GsonBuilder()
+                    .registerTypeAdapter(GeoGame.class, new GamesDeserializer())
+                    .registerTypeAdapter(GeoGame.class, new GamesSerializer())
+                    .create();
+            String jsonStr = gson.toJson(games);
             File file = new File(ctx.getFilesDir(), getString(R.string.games_filename));
             try {
                 FileWriter fileWriter = new FileWriter(file);
@@ -332,17 +340,25 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         Gson gson = new GsonBuilder()
-                        .registerTypeAdapter(GeoGames.class, new GamesDeserializer())
+                        .registerTypeAdapter(GeoGame.class, new GamesDeserializer())
+                        .registerTypeAdapter(GeoGame.class, new GamesSerializer())
                         .create();
-        GeoGames games = gson.fromJson(sb.toString(), GeoGames.class);
-        game = games.getGame("test");
+        Type type = new TypeToken<HashMap<String, GeoGame>>(){}.getType();
+        HashMap<String, GeoGame> games = gson.fromJson(sb.toString(), type);
+        game = games.get("test");
 
         markers = new LinkedList<>();
         for (Pair<Double, Double> latLonPair : game.pointQuizDict.keySet()) {
             GeoPoint point = new GeoPoint(latLonPair.first, latLonPair.second);
-            CustomMarker marker = new CustomMarker(map, point, game.getQuiz(latLonPair.first, latLonPair.second));
+            QuizInfo quiz = game.getQuiz(latLonPair.first, latLonPair.second);
+            boolean won = game.getWon(latLonPair.first, latLonPair.second);
+            CustomMarker marker = new CustomMarker(map, point, quiz);
             map.getOverlays().add(marker);
             markers.add(marker);
+            if (won)
+            {
+                marker.setVisited();
+            }
         }
 
         GpsMyLocationProvider locationProvider = new GPSLocationChangeProvider(ctx, markers);
@@ -364,6 +380,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        map.setMultiTouchControls(true);
     }
 
     @Override

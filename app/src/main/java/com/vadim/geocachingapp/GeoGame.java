@@ -75,9 +75,9 @@ public class GeoGame implements Serializable {
         }
     }
 
-    public QuizGameInfo addQuiz(double lat, double lon, QuizInfo quiz)
+    public QuizGameInfo addQuiz(double lat, double lon, QuizInfo quiz, boolean won)
     {
-        QuizGameInfo qgi = new QuizGameInfo(quiz, false);
+        QuizGameInfo qgi = new QuizGameInfo(quiz, won);
         pointQuizDict.put(new Pair<Double, Double>(lat, lon), qgi);
         return qgi;
     }

@@ -8,47 +8,32 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.LinkedList;
 
-public class GamesDeserializer implements JsonDeserializer<GeoGames>
+public class GamesDeserializer implements JsonDeserializer<GeoGame>
 {
     @Override
-    public GeoGames deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext ctx) throws JsonParseException
+    public GeoGame deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext ctx) throws JsonParseException
     {
-        JsonObject obj = json.getAsJsonObject();
-
-        GeoGames games = new GeoGames();
-        JsonObject idToGame = obj.get("idToGame").getAsJsonObject();
-        Set<Map.Entry<String, JsonElement>> entries = idToGame.entrySet();
-        for(Map.Entry<String, JsonElement> entry: entries)
+        GeoGame game = new GeoGame();
+        JsonArray arr = json.getAsJsonArray();
+        for (JsonElement el : arr)
         {
-            GeoGame game = new GeoGame();
-            Set<Map.Entry<String, JsonElement>> quizes =
-                    entry.getValue().getAsJsonObject().get("pointQuizDict").getAsJsonObject().entrySet();
-            for(Map.Entry<String, JsonElement> quizEntry: quizes)
+            JsonObject fullInfo = el.getAsJsonObject();
+            double lat = fullInfo.get("lat").getAsDouble();
+            double lon = fullInfo.get("lon").getAsDouble();
+            boolean won = fullInfo.get("won").getAsBoolean();
+            String text = fullInfo.get("text").getAsString();
+            int correct = fullInfo.get("correct").getAsInt();
+            JsonArray optionsArray = fullInfo.get("options").getAsJsonArray();
+            LinkedList<String> options = new LinkedList<String>();
+            for (JsonElement optionEl : optionsArray)
             {
-                String pairStr = quizEntry.getKey();
-                String[] spl = pairStr.split("[{} ]");
-                boolean won = quizEntry.getValue().getAsJsonObject().get("won").getAsBoolean();
-                JsonObject quizInfoJsonObject = quizEntry.getValue().getAsJsonObject().get("quizInfo").getAsJsonObject();
-                int correct = quizInfoJsonObject.get("correct").getAsInt();
-                JsonArray arr = quizInfoJsonObject.get("options").getAsJsonArray();
-                List<String> list = new ArrayList<String>();
-                for(int i = 0; i < arr.size(); i++){
-                    list.add(arr.get(i).getAsString());
-                }
-                String[] options = list.toArray(new String[0]);
-                String quizText = quizInfoJsonObject.get("quizText").getAsString();
-                QuizInfo info = new QuizInfo(quizText, options, correct);
-                GeoGame.QuizGameInfo quizGameInfo = game.addQuiz(Double.parseDouble(spl[1]), Double.parseDouble(spl[2]), info);
-                quizGameInfo.won = won;
-                quizEntry.getValue();
+                options.add(optionEl.getAsString());
             }
-            games.addGame(entry.getKey(), game);
+            QuizInfo quiz = new QuizInfo(text, options.toArray(new String[0]), correct);
+            game.addQuiz(lat, lon, quiz, won);
         }
-        return games;
+        return game;
     }
 }
