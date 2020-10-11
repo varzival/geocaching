@@ -305,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
             game.addQuiz(49.374907, 8.682536, quiz, false);
             game.addQuiz(49.371920, 8.682804, quiz, false);
             game.addQuiz(49.369059, 8.683040, quiz, false);
+            game.addQuiz(49.371992, 8.684476, quiz, false);
 
             HashMap<String, GeoGame> games = new HashMap<>();
             games.put("test", game);
