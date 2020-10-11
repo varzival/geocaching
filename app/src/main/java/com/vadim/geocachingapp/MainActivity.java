@@ -8,7 +8,9 @@ import android.location.Location;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Pair;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -103,6 +105,9 @@ public class MainActivity extends AppCompatActivity {
         final double waitTime = 10;
         private double lockTime = 0.0;
         public boolean visited = false;
+        private Marker progressBarMarker;
+        private ProgressBar progressBar;
+        private MapView mapView;
 
         private final Marker.OnMarkerClickListener POIListener = new Marker.OnMarkerClickListener() {
             @Override
@@ -154,7 +159,9 @@ public class MainActivity extends AppCompatActivity {
         Thread lockResetThread = new Thread(){
             public void run(){
                 while(getTimeLockLeft() > 0.0)
-                { }
+                {
+                    progressBar.setProgress((int)getTimeLockLeft());
+                }
                 setPOI();
             }
         };
@@ -165,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
 
             this.quiz = quiz;
             this.position = position;
+            this.mapView = mapView;
 
             this.setPosition(position);
             this.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
@@ -203,6 +211,16 @@ public class MainActivity extends AppCompatActivity {
             this.setOnMarkerClickListener(LockedListener);
             lockTime = System.currentTimeMillis();
             lockResetThread.start();
+
+            progressBarMarker = new Marker(mapView);
+            progressBarMarker.setPosition(position);
+
+            LayoutInflater inflater = getLayoutInflater();
+            progressBar = (ProgressBar)inflater.inflate(R.layout.progress_circle, null);
+            progressBar.setMin(0);
+            progressBar.setMax((int)waitTime);
+
+            progressBarMarker.setIcon(progressBar.getProgressDrawable());
         }
 
     }
@@ -301,6 +319,7 @@ public class MainActivity extends AppCompatActivity {
             game.addQuiz(49.374907, 8.682536, quiz);
             game.addQuiz(49.371920, 8.682804, quiz);
             game.addQuiz(49.369059, 8.683040, quiz);
+            game.addQuiz(49.371992, 8.684476, quiz);
 
             GeoGames games = new GeoGames();
             games.addGame("test", game);
