@@ -9,11 +9,17 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.osmdroid.util.GeoPoint;
+
+import java.io.Serializable;
+
 public class QuizActivity extends AppCompatActivity {
 
     // Unique tag for the intent reply.
-    public static final String EXTRA_REPLY =
-            "com.example.android.twoactivities.extra.REPLY";
+    public static final String EXTRA_CORRECT =
+            "quizactivity.CORRECT";
+    public static final String EXTRA_GEOPOINT =
+            "quizactivity.GEOPOINT";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +30,7 @@ public class QuizActivity extends AppCompatActivity {
         // the intent extra.
         Intent intent = getIntent();
         QuizInfo quiz = (QuizInfo) intent.getSerializableExtra(MainActivity.EXTRA_QUIZ);
+        final GeoPoint geoPoint = (GeoPoint) intent.getSerializableExtra(MainActivity.EXTRA_GEOPOINT);
         assert quiz != null;
 
         ((TextView)findViewById(R.id.quiz_text)).setText(quiz.quizText);
@@ -43,7 +50,8 @@ public class QuizActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     Intent replyIntent = new Intent();
-                    replyIntent.putExtra(EXTRA_REPLY, correct);
+                    replyIntent.putExtra(EXTRA_CORRECT, correct);
+                    replyIntent.putExtra(EXTRA_GEOPOINT, (Serializable) geoPoint);
                     setResult(RESULT_OK, replyIntent);
                     finish();
                 }

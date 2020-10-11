@@ -34,20 +34,26 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_QUIZ
-            = "com.example.android.twoactivities.extra.QUIZ";
+            = "mapactivity.QUIZ";
+    public static final String EXTRA_GEOPOINT
+            = "mapactivity.GEOPOINT";
     // Unique tag for the intent reply
     public static final int TEXT_REQUEST = 1;
 
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private MapView map;
+    private GeoGame game;
+    private List <CustomMarker> markers;
 
     private final double clickableDistance = 20;
 
@@ -73,6 +79,14 @@ public class MainActivity extends AppCompatActivity {
 
             for (CustomMarker marker : markers) {
                 double distance = marker.getPosition().distanceToAsDouble(my_point);
+                if (marker.visited)
+                {
+                    continue;
+                }
+                if (marker.getTimeLockLeft() > 0.0)
+                {
+                    continue;
+                }
                 if (distance <= clickableDistance) {
                     marker.setClickable();
                 } else {
@@ -85,6 +99,10 @@ public class MainActivity extends AppCompatActivity {
     private class CustomMarker extends Marker {
 
         public QuizInfo quiz;
+        public GeoPoint position;
+        final double waitTime = 10;
+        private double lockTime = 0.0;
+        public boolean visited = false;
 
         private final Marker.OnMarkerClickListener POIListener = new Marker.OnMarkerClickListener() {
             @Override
@@ -103,9 +121,41 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(getApplicationContext(), QuizActivity.class);
 
                 intent.putExtra(EXTRA_QUIZ, quiz);
+                intent.putExtra(EXTRA_GEOPOINT, (Serializable) position);
                 startActivityForResult(intent, TEXT_REQUEST);
 
                 return true;
+            }
+        };
+
+        private final Marker.OnMarkerClickListener VisitedListener = new Marker.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker, MapView mapView) {
+                Toast.makeText(map.getContext()
+                        , "Du hast diesen Punkt bereits besucht."
+                        , Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        };
+
+        private final Marker.OnMarkerClickListener LockedListener = new Marker.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker, MapView mapView) {
+                double timeLeft = getTimeLockLeft();
+                int timeLeftInt = (int)Math.floor(timeLeft);
+                String sec = timeLeftInt == 1 ? "Sekunde" : "Sekunden";
+                Toast.makeText(map.getContext()
+                        , "Punkt gesperrt. Warte noch "+ timeLeftInt + " " + sec + "."
+                        , Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        };
+
+        Thread lockResetThread = new Thread(){
+            public void run(){
+                while(getTimeLockLeft() > 0.0)
+                { }
+                setPOI();
             }
         };
 
@@ -114,11 +164,21 @@ public class MainActivity extends AppCompatActivity {
             super(mapView);
 
             this.quiz = quiz;
+            this.position = position;
 
             this.setPosition(position);
             this.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_of_interest));
-            this.setOnMarkerClickListener(POIListener);
+            setPOI();
+        }
+
+        public double getTimeLockLeft()
+        {
+            if (lockTime == 0.0)
+            {
+                return 0.0;
+            }
+            double ret = (waitTime * 1000 - ((new Date()).getTime() - lockTime))/1000.0;
+            return ret;
         }
 
         public void setClickable() {
@@ -129,6 +189,20 @@ public class MainActivity extends AppCompatActivity {
         public void setPOI() {
             this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_of_interest));
             this.setOnMarkerClickListener(POIListener);
+            this.lockTime = 0.0;
+        }
+
+        public void setVisited() {
+            this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_visited));
+            this.setOnMarkerClickListener(VisitedListener);
+            visited = true;
+        }
+
+        public void setLocked() {
+            this.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_point_locked));
+            this.setOnMarkerClickListener(LockedListener);
+            lockTime = System.currentTimeMillis();
+            lockResetThread.start();
         }
 
     }
@@ -141,11 +215,37 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == TEXT_REQUEST) {
             // Test to make sure the intent reply result was good.
             if (resultCode == RESULT_OK) {
-                boolean reply = data.getBooleanExtra(QuizActivity.EXTRA_REPLY, false);
-                String replyText = reply ? "Richtig" : "Falsch";
+                boolean correct = data.getBooleanExtra(QuizActivity.EXTRA_CORRECT, false);
+                GeoPoint point = (GeoPoint) data.getSerializableExtra(QuizActivity.EXTRA_GEOPOINT);
+                String replyText = correct ? "Richtig" : "Falsch";
                 Toast.makeText(map.getContext()
                         , replyText
                         , Toast.LENGTH_SHORT).show();
+                if (correct && point != null)
+                {
+                    game.setWon(point.getLatitude(), point.getLongitude());
+                    for (CustomMarker marker : markers)
+                    {
+                        if (marker.position.getLatitude() == point.getLatitude()
+                                && marker.position.getLongitude() == point.getLongitude())
+                            {
+                                marker.setVisited();
+                                break;
+                            }
+                    }
+                }
+                else if (!correct && point != null)
+                {
+                    for (CustomMarker marker : markers)
+                    {
+                        if (marker.position.getLatitude() == point.getLatitude()
+                                && marker.position.getLongitude() == point.getLongitude())
+                        {
+                            marker.setLocked();
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -235,9 +335,9 @@ public class MainActivity extends AppCompatActivity {
                         .registerTypeAdapter(GeoGames.class, new GamesDeserializer())
                         .create();
         GeoGames games = gson.fromJson(sb.toString(), GeoGames.class);
-        GeoGame game = games.getGame("test");
+        game = games.getGame("test");
 
-        List < CustomMarker > markers = new LinkedList<>();
+        markers = new LinkedList<>();
         for (Pair<Double, Double> latLonPair : game.pointQuizDict.keySet()) {
             GeoPoint point = new GeoPoint(latLonPair.first, latLonPair.second);
             CustomMarker marker = new CustomMarker(map, point, game.getQuiz(latLonPair.first, latLonPair.second));
