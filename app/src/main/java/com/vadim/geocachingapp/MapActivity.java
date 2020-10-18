@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MapActivity extends AppCompatActivity {
 
     public static final String EXTRA_QUIZ
             = "mapactivity.QUIZ";
@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private MapView map;
     private GeoGame game;
     private List <CustomMarker> markers;
+    private ApiConnector connector;
 
     private final double clickableDistance = 20;
 
@@ -263,6 +264,7 @@ public class MainActivity extends AppCompatActivity {
         //load/initialize the osmdroid configuration, this can be done
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        connector = new ApiConnector(ctx);
 
         //setting this before the layout is inflated is a good idea
         //it 'should' ensure that the map has a writable location for the map cache, even without permissions

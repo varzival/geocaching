@@ -29,8 +29,8 @@ public class QuizActivity extends AppCompatActivity {
         // Get the intent that launched this activity, and the message in
         // the intent extra.
         Intent intent = getIntent();
-        QuizInfo quiz = (QuizInfo) intent.getSerializableExtra(MainActivity.EXTRA_QUIZ);
-        final GeoPoint geoPoint = (GeoPoint) intent.getSerializableExtra(MainActivity.EXTRA_GEOPOINT);
+        QuizInfo quiz = (QuizInfo) intent.getSerializableExtra(MapActivity.EXTRA_QUIZ);
+        final GeoPoint geoPoint = (GeoPoint) intent.getSerializableExtra(MapActivity.EXTRA_GEOPOINT);
         assert quiz != null;
 
         ((TextView)findViewById(R.id.quiz_text)).setText(quiz.quizText);

@@ -20,17 +20,24 @@ public class GamesDeserializer implements JsonDeserializer<GeoGame>
         for (JsonElement el : arr)
         {
             JsonObject fullInfo = el.getAsJsonObject();
+            String name = fullInfo.get("name").getAsString();
             double lat = fullInfo.get("lat").getAsDouble();
             double lon = fullInfo.get("lon").getAsDouble();
-            boolean won = fullInfo.get("won").getAsBoolean();
+            boolean won;
+            if (fullInfo.has("won"))
+                won = fullInfo.get("won").getAsBoolean();
+            else
+                won = false;
             String text = fullInfo.get("text").getAsString();
             int correct = fullInfo.get("correct").getAsInt();
             JsonArray optionsArray = fullInfo.get("options").getAsJsonArray();
-            LinkedList<String> options = new LinkedList<String>();
+            LinkedList<String> options = new LinkedList<>();
             for (JsonElement optionEl : optionsArray)
             {
                 options.add(optionEl.getAsString());
             }
+
+            game.name = name;
             QuizInfo quiz = new QuizInfo(text, options.toArray(new String[0]), correct);
             game.addQuiz(lat, lon, quiz, won);
         }

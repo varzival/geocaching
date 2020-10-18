@@ -16,6 +16,8 @@ public class GamesSerializer implements JsonSerializer<GeoGame> {
     @Override
     public JsonElement serialize(GeoGame src, Type typeOfSrc, JsonSerializationContext context)
     {
+        JsonObject fullObject = new JsonObject();
+        fullObject.addProperty("name", src.name);
         JsonArray quizArray = new JsonArray();
         for (Map.Entry<Pair<Double, Double>, GeoGame.QuizGameInfo> entry: src.pointQuizDict.entrySet())
         {
@@ -36,6 +38,7 @@ public class GamesSerializer implements JsonSerializer<GeoGame> {
 
             quizArray.add(obj);
         }
-        return quizArray;
+        fullObject.add("quizes", quizArray);
+        return fullObject;
     }
 }

@@ -23,10 +23,7 @@ public class GeoGame implements Serializable {
     }
 
     public Map<Pair<Double, Double>, QuizGameInfo> pointQuizDict;
-
-    public GeoGame(Map<Pair<Double, Double>, QuizGameInfo> pointQuizDict) {
-        this.pointQuizDict = pointQuizDict;
-    }
+    public String name;
 
     public Set<GeoPoint> getPoints()
     {
@@ -40,6 +37,12 @@ public class GeoGame implements Serializable {
 
     public GeoGame() {
         this.pointQuizDict = new HashMap<>();
+        this.name = "";
+    }
+
+    public GeoGame(String name) {
+        this.pointQuizDict = new HashMap<>();
+        this.name = name;
     }
 
     public QuizInfo getQuiz(double lat, double lon)

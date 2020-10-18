@@ -5,4 +5,5 @@
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
     <string name="games_filename">games.json</string>
+    <string name="api_url">https://geocaching-serv.herokuapp.com/api/</string>
 </resources>
