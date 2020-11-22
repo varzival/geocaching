@@ -2,6 +2,9 @@ package com.vadim.geocachingapp;
 
 import android.util.Pair;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.osmdroid.util.GeoPoint;
 
 import java.io.Serializable;
@@ -12,7 +15,7 @@ import java.util.Set;
 
 public class GeoGame implements Serializable {
 
-    public static class QuizGameInfo{
+    public static class QuizGameInfo implements Serializable {
         public QuizInfo quizInfo;
         public boolean won;
 
@@ -83,6 +86,22 @@ public class GeoGame implements Serializable {
         QuizGameInfo qgi = new QuizGameInfo(quiz, won);
         pointQuizDict.put(new Pair<Double, Double>(lat, lon), qgi);
         return qgi;
+    }
+
+    public String toSting() {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(GeoGame.class, new GamesDeserializer())
+                .registerTypeAdapter(GeoGame.class, new GamesSerializer())
+                .create();
+        return gson.toJson(this);
+    }
+
+    public static GeoGame fromString(String str) {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(GeoGame.class, new GamesDeserializer())
+                .registerTypeAdapter(GeoGame.class, new GamesSerializer())
+                .create();
+        return gson.fromJson(str, GeoGame.class);
     }
 }
 

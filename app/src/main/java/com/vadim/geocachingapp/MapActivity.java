@@ -24,7 +24,6 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,6 +34,7 @@ public class MapActivity extends AppCompatActivity {
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private MapView map;
     private GeoGame game;
+    private String code;
     private List <CustomMarker> markers;
 
     @Override
@@ -54,6 +54,7 @@ public class MapActivity extends AppCompatActivity {
                 if (correct && point != null)
                 {
                     game.setWon(point.getLatitude(), point.getLongitude());
+                    GameIO.writeGame(getApplicationContext(), code, game);
                     for (CustomMarker marker : markers)
                     {
                         if (marker.position.getLatitude() == point.getLatitude()
@@ -84,6 +85,10 @@ public class MapActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Intent intent = getIntent();
+        game = GeoGame.fromString(intent.getStringExtra(GameSelectActivity.EXTRA_GAME));
+        code = intent.getStringExtra(GameSelectActivity.EXTRA_CODE);
+
         //handle permissions first, before map is created. not depicted here
 
         //load/initialize the osmdroid configuration, this can be done
@@ -110,9 +115,6 @@ public class MapActivity extends AppCompatActivity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         });
 
-        HashMap<String, GeoGame> games = GameIO.getGames(ctx);
-        game = games.get("test");
-
         markers = new LinkedList<>();
         for (Pair<Double, Double> latLonPair : game.pointQuizDict.keySet()) {
             GeoPoint point = new GeoPoint(latLonPair.first, latLonPair.second);
@@ -120,11 +122,11 @@ public class MapActivity extends AppCompatActivity {
             boolean won = game.getWon(latLonPair.first, latLonPair.second);
             CustomMarker marker = new CustomMarker(this, map, point, quiz);
             map.getOverlays().add(marker);
-            markers.add(marker);
             if (won)
             {
                 marker.setVisited();
             }
+            markers.add(marker);
         }
 
         GpsMyLocationProvider locationProvider = new GPSLocationChangeProvider(ctx, markers);
