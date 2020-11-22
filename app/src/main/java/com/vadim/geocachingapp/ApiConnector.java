@@ -11,8 +11,6 @@ import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.util.HashMap;
-
 public class ApiConnector {
 
     private RequestQueue queue;
@@ -42,9 +40,7 @@ public class ApiConnector {
                     public void onResponse(String response) {
 
                         GeoGame game = gson.fromJson(response, GeoGame.class);
-                        HashMap<String, GeoGame> games = new HashMap<>();
-                        games.put(code, game);
-                        GameIO.writeGames(ctx, games);
+                        GameIO.writeGame(ctx, code, game);
 
                         callback.onSuccess(response);
                     }

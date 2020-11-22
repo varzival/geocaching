@@ -58,4 +58,11 @@ public class GameIO {
             e.printStackTrace();
         }
     }
+
+    public static void writeGame(Context ctx, String code, GeoGame game)
+    {
+        HashMap<String, GeoGame> games = getGames(ctx);
+        games.put(code, game);
+        writeGames(ctx, games);
+    }
 }

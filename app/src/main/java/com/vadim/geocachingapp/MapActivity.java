@@ -36,10 +36,6 @@ public class MapActivity extends AppCompatActivity {
     private MapView map;
     private GeoGame game;
     private List <CustomMarker> markers;
-    private ApiConnector connector;
-
-    //TODO remove for production
-    private boolean gameCreated = false;
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -93,7 +89,6 @@ public class MapActivity extends AppCompatActivity {
         //load/initialize the osmdroid configuration, this can be done
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-        connector = new ApiConnector(ctx);
 
         //setting this before the layout is inflated is a good idea
         //it 'should' ensure that the map has a writable location for the map cache, even without permissions
@@ -114,36 +109,6 @@ public class MapActivity extends AppCompatActivity {
                 // WRITE_EXTERNAL_STORAGE is required in order to show the map
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         });
-
-        if (!gameCreated)
-        {
-            // TODO remove for production
-            GeoGame game = new GeoGame();
-
-            String[] options = {"Korrekt", "Falsch", "Falsch"};
-
-            QuizInfo quiz = new QuizInfo(
-                    "Quiz Text", options, 0
-            );
-
-            /*
-            Random rnd = new Random();
-            for (int i = 0; i < 10; i++) {
-                game.addQuiz(37 + rnd.nextFloat() * 5, -8 + rnd.nextFloat() * 5, quiz);
-            }
-            */
-            // my loc 49.374907, 8.682536
-            game.addQuiz(49.374907, 8.682536, quiz, false);
-            game.addQuiz(49.371920, 8.682804, quiz, false);
-            game.addQuiz(49.369059, 8.683040, quiz, false);
-            game.addQuiz(49.371992, 8.684476, quiz, false);
-
-            HashMap<String, GeoGame> games = new HashMap<>();
-            games.put("test", game);
-            GameIO.writeGames(ctx, games);
-            gameCreated = true;
-            //TODO end
-        }
 
         HashMap<String, GeoGame> games = GameIO.getGames(ctx);
         game = games.get("test");

@@ -1,10 +1,16 @@
 package com.vadim.geocachingapp;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.InputType;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.VolleyError;
@@ -20,7 +26,10 @@ public class GameSelectActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game_select);
+        downloadGame("test");
+    }
 
+    private void downloadGame(String name) {
         ApiConnector apiConnector = new ApiConnector(getApplicationContext());
         apiConnector.requestGame(new ApiConnector.VolleyCallback() {
             @Override
@@ -31,9 +40,11 @@ public class GameSelectActivity extends AppCompatActivity {
 
             @Override
             public void onError(VolleyError error) {
-                Log.d("apicall", "Error");
+                Toast.makeText(getApplicationContext()
+                        ,"Spiel nicht gefunden"
+                        ,Toast.LENGTH_SHORT).show();
             }
-        }, "test");
+        }, name);
     }
 
     private void fillList() {
@@ -45,4 +56,29 @@ public class GameSelectActivity extends AppCompatActivity {
                         games.keySet().toArray(new String[0]));
         this.listView.setAdapter(arrayAdapter);
     }
+
+    public void showGameDialog(@Nullable View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Spiel hinzufügen");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                downloadGame(input.getText().toString());
+            }
+        });
+        builder.setNegativeButton("Abbrechen", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
 }
