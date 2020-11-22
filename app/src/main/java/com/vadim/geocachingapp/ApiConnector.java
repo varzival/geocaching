@@ -10,9 +10,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 
 public class ApiConnector {
@@ -32,7 +30,7 @@ public class ApiConnector {
         void onError(VolleyError error);
     }
 
-    public void requestGame(final VolleyCallback callback, String code) {
+    public void requestGame(final VolleyCallback callback, final String code) {
         final Gson gson = new GsonBuilder()
                 .registerTypeAdapter(GeoGame.class, new GamesDeserializer())
                 .registerTypeAdapter(GeoGame.class, new GamesSerializer())
@@ -43,8 +41,10 @@ public class ApiConnector {
                     @Override
                     public void onResponse(String response) {
 
-                        Type type = new TypeToken<HashMap<String, GeoGame>>(){}.getType();
-                        HashMap<String, GeoGame> games = gson.fromJson(response, type);
+                        GeoGame game = gson.fromJson(response, GeoGame.class);
+                        HashMap<String, GeoGame> games = new HashMap<>();
+                        games.put(code, game);
+                        GameIO.writeGames(ctx, games);
 
                         callback.onSuccess(response);
                     }
