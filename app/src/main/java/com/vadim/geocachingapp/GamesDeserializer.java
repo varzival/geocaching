@@ -25,8 +25,8 @@ public class GamesDeserializer implements JsonDeserializer<GeoGame>
             double lat = quizObj.get("lat").getAsDouble();
             double lon = quizObj.get("lon").getAsDouble();
             boolean won;
-            if (fullInfo.has("won"))
-                won = fullInfo.get("won").getAsBoolean();
+            if (quizObj.has("won"))
+                won = quizObj.get("won").getAsBoolean();
             else
                 won = false;
             String text = quizObj.get("text").getAsString();

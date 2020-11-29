@@ -9,17 +9,15 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.osmdroid.util.GeoPoint;
-
-import java.io.Serializable;
-
 public class QuizActivity extends AppCompatActivity {
 
     // Unique tag for the intent reply.
     public static final String EXTRA_CORRECT =
             "quizactivity.CORRECT";
-    public static final String EXTRA_GEOPOINT =
-            "quizactivity.GEOPOINT";
+    public static final String EXTRA_QUIZINDEX =
+            "quizactivity.QUIZINDEX";
+    public static final String EXTRA_QUIZ =
+            "quizactivity.QUIZ";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,8 +27,8 @@ public class QuizActivity extends AppCompatActivity {
         // Get the intent that launched this activity, and the message in
         // the intent extra.
         Intent intent = getIntent();
-        QuizInfo quiz = (QuizInfo) intent.getSerializableExtra(CustomMarker.EXTRA_QUIZ);
-        final GeoPoint geoPoint = (GeoPoint) intent.getSerializableExtra(CustomMarker.EXTRA_GEOPOINT);
+        QuizInfo quiz = (QuizInfo) intent.getSerializableExtra(EXTRA_QUIZ);
+        final int quizIndex = intent.getIntExtra(EXTRA_QUIZINDEX, -1);
         assert quiz != null;
 
         ((TextView)findViewById(R.id.quiz_text)).setText(quiz.quizText);
@@ -51,7 +49,7 @@ public class QuizActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     Intent replyIntent = new Intent();
                     replyIntent.putExtra(EXTRA_CORRECT, correct);
-                    replyIntent.putExtra(EXTRA_GEOPOINT, (Serializable) geoPoint);
+                    replyIntent.putExtra(EXTRA_QUIZINDEX, quizIndex);
                     setResult(RESULT_OK, replyIntent);
                     finish();
                 }

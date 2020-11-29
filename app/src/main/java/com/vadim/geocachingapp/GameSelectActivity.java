@@ -67,6 +67,7 @@ public class GameSelectActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long arg3) {
+                games = GameIO.getGames(getApplicationContext());
                 Intent intent = new Intent(getApplicationContext(), MapActivity.class);
 
                 // TODO: read correct code

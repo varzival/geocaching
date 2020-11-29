@@ -10,15 +10,12 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
-import java.io.Serializable;
 import java.util.Date;
 
-public class CustomMarker extends Marker {
+import static com.vadim.geocachingapp.QuizActivity.EXTRA_QUIZ;
+import static com.vadim.geocachingapp.QuizActivity.EXTRA_QUIZINDEX;
 
-    public static final String EXTRA_QUIZ
-            = "mapactivity.QUIZ";
-    public static final String EXTRA_GEOPOINT
-            = "mapactivity.GEOPOINT";
+public class CustomMarker extends Marker {
     public static final int TEXT_REQUEST = 1;
 
     public QuizInfo quiz;
@@ -27,6 +24,7 @@ public class CustomMarker extends Marker {
     private double lockTime = 0.0;
     public boolean visited = false;
     private Activity activity;
+    public int quizIndex;
 
     private final Marker.OnMarkerClickListener POIListener = new Marker.OnMarkerClickListener() {
         @Override
@@ -45,7 +43,7 @@ public class CustomMarker extends Marker {
             Intent intent = new Intent(activity.getApplicationContext(), QuizActivity.class);
 
             intent.putExtra(EXTRA_QUIZ, quiz);
-            intent.putExtra(EXTRA_GEOPOINT, (Serializable) position);
+            intent.putExtra(EXTRA_QUIZINDEX, quizIndex);
             activity.startActivityForResult(intent, TEXT_REQUEST);
 
             return true;
@@ -84,12 +82,13 @@ public class CustomMarker extends Marker {
     };
 
 
-    public CustomMarker(Activity activity, MapView mapView, GeoPoint position, QuizInfo quiz) {
+    public CustomMarker(Activity activity, MapView mapView, GeoPoint position, QuizInfo quiz, int quizIndex) {
         super(mapView);
 
         this.activity = activity;
         this.quiz = quiz;
         this.position = position;
+        this.quizIndex = quizIndex;
 
         this.setPosition(position);
         this.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);

@@ -1,90 +1,73 @@
 package com.vadim.geocachingapp;
 
-import android.util.Pair;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import org.osmdroid.util.GeoPoint;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.LinkedList;
+import java.util.List;
 
 public class GeoGame implements Serializable {
 
     public static class QuizGameInfo implements Serializable {
         public QuizInfo quizInfo;
         public boolean won;
+        GeoPoint geoPoint;
 
-        public QuizGameInfo(QuizInfo quizInfo, boolean won) {
+        public QuizGameInfo(QuizInfo quizInfo, boolean won, GeoPoint geoPoint) {
             this.quizInfo = quizInfo;
             this.won = won;
+            this.geoPoint = geoPoint;
         }
     }
 
-    public Map<Pair<Double, Double>, QuizGameInfo> pointQuizDict;
+    public LinkedList<QuizGameInfo> quizList;
     public String name;
 
-    public Set<GeoPoint> getPoints()
+    public List<GeoPoint> getPoints()
     {
-        Set<GeoPoint> points = new HashSet<GeoPoint>();
-        for (Pair<Double, Double> latLonPair: pointQuizDict.keySet())
+        List<GeoPoint> points = new LinkedList<>();
+        for (QuizGameInfo qgi: quizList)
         {
-            points.add(new GeoPoint(latLonPair.first, latLonPair.second));
+            points.add(qgi.geoPoint);
         }
         return points;
     }
 
     public GeoGame() {
-        this.pointQuizDict = new HashMap<>();
+        this.quizList = new LinkedList<>();
         this.name = "";
     }
 
     public GeoGame(String name) {
-        this.pointQuizDict = new HashMap<>();
+        this.quizList = new LinkedList<>();
         this.name = name;
     }
 
-    public QuizInfo getQuiz(double lat, double lon)
+    public QuizInfo getQuiz(int quizIndex)
     {
-        QuizGameInfo quiz = pointQuizDict.get(new Pair<Double, Double>(lat, lon));
-        if (quiz == null)
-        {
-            return null;
-        }
-        else{
-            return quiz.quizInfo;
-        }
+        QuizGameInfo quiz = quizList.get(quizIndex);
+        return quiz.quizInfo;
     }
 
-    public boolean getWon(double lat, double lon)
+    public boolean getWon(int quizIndex)
     {
-        QuizGameInfo quiz = pointQuizDict.get(new Pair<Double, Double>(lat, lon));
-        if (quiz == null)
-        {
-            return false;
-        }
-        else{
-            return quiz.won;
-        }
+        QuizGameInfo quiz = quizList.get(quizIndex);
+        return quiz.won;
     }
 
-    public void setWon(double lat, double lon)
+    public void setWon(int quizIndex)
     {
-        QuizGameInfo quiz = pointQuizDict.get(new Pair<Double, Double>(lat, lon));
-        if (quiz != null)
-        {
-            quiz.won = true;
-        }
+        QuizGameInfo quiz = quizList.get(quizIndex);
+        quiz.won = true;
     }
 
     public QuizGameInfo addQuiz(double lat, double lon, QuizInfo quiz, boolean won)
     {
-        QuizGameInfo qgi = new QuizGameInfo(quiz, won);
-        pointQuizDict.put(new Pair<Double, Double>(lat, lon), qgi);
+        QuizGameInfo qgi = new QuizGameInfo(quiz, won, new GeoPoint(lat, lon));
+        quizList.add(qgi);
         return qgi;
     }
 

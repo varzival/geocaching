@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Pair;
 import android.view.View;
 import android.widget.Toast;
 
@@ -46,31 +45,29 @@ public class MapActivity extends AppCompatActivity {
             // Test to make sure the intent reply result was good.
             if (resultCode == RESULT_OK) {
                 boolean correct = data.getBooleanExtra(QuizActivity.EXTRA_CORRECT, false);
-                GeoPoint point = (GeoPoint) data.getSerializableExtra(QuizActivity.EXTRA_GEOPOINT);
+                int quizIndex = data.getIntExtra(QuizActivity.EXTRA_QUIZINDEX, -1);
                 String replyText = correct ? "Richtig" : "Falsch";
                 Toast.makeText(map.getContext()
                         , replyText
                         , Toast.LENGTH_SHORT).show();
-                if (correct && point != null)
+                if (correct && quizIndex != -1)
                 {
-                    game.setWon(point.getLatitude(), point.getLongitude());
+                    game.setWon(quizIndex);
                     GameIO.writeGame(getApplicationContext(), code, game);
                     for (CustomMarker marker : markers)
                     {
-                        if (marker.position.getLatitude() == point.getLatitude()
-                                && marker.position.getLongitude() == point.getLongitude())
+                        if (marker.quizIndex == quizIndex)
                             {
                                 marker.setVisited();
                                 break;
                             }
                     }
                 }
-                else if (!correct && point != null)
+                else if (!correct && quizIndex != -1)
                 {
                     for (CustomMarker marker : markers)
                     {
-                        if (marker.position.getLatitude() == point.getLatitude()
-                                && marker.position.getLongitude() == point.getLongitude())
+                        if (marker.quizIndex == quizIndex)
                         {
                             marker.setLocked();
                             break;
@@ -116,11 +113,12 @@ public class MapActivity extends AppCompatActivity {
         });
 
         markers = new LinkedList<>();
-        for (Pair<Double, Double> latLonPair : game.pointQuizDict.keySet()) {
-            GeoPoint point = new GeoPoint(latLonPair.first, latLonPair.second);
-            QuizInfo quiz = game.getQuiz(latLonPair.first, latLonPair.second);
-            boolean won = game.getWon(latLonPair.first, latLonPair.second);
-            CustomMarker marker = new CustomMarker(this, map, point, quiz);
+        for (int i=0; i < game.quizList.size(); i++) {
+            GeoGame.QuizGameInfo qgi = game.quizList.get(i);
+            GeoPoint point = qgi.geoPoint;
+            QuizInfo quiz = qgi.quizInfo;
+            boolean won = qgi.won;
+            CustomMarker marker = new CustomMarker(this, map, point, quiz, i);
             map.getOverlays().add(marker);
             if (won)
             {
